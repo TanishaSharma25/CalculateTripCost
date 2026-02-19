@@ -60,12 +60,12 @@ public class BookingHomePage {
 
         // select 17
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(
-                "span[data-date='2026-02-17']"
+                "span[data-date='2026-02-18']"
         ))).click();
 
         // select 21
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(
-                "span[data-date='2026-02-21']"
+                "span[data-date='2026-02-22']"
         ))).click();
     }
 

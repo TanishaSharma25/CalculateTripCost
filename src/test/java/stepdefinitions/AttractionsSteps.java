@@ -10,12 +10,13 @@ public class AttractionsSteps {
     private WebDriver driver;
     private AttractionsPage attractions;
 
-    @Given("user is on attractions home")
+
+    @Given("user navigates home and opens attractions")
     public void user_is_on_attractions_home() {
-        driver = DriverFactory.getDriver();
+        driver = DriverFactory.initDriver();
         // Assumes you already navigated to Attractions via header.
         // If the test is run standalone, uncomment the next line:
-        // driver.get("https://www.booking.com/attractions/index.html");
+        driver.get("https://www.booking.com/attractions/index.html");
         attractions = new AttractionsPage(driver);
         attractions.ensureAttractionsHeaderLoaded();
     }

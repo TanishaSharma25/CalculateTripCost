@@ -2,6 +2,7 @@ package pages;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.*;
+import utils.ExcelUtils;
 
 import java.time.Duration;
 import java.util.List;
@@ -11,11 +12,13 @@ public class AttractionsResultsPage {
     private final WebDriver driver;
     private final WebDriverWait wait;
 
+    private final String excelPath = "booking_results.xlsx";
+
     public static class ActivityDetails {
         public String name;
-        public String rating;
+        public String departurePoint;
         public String duration;
-        public String description;
+        public String price;
     }
 
     public AttractionsResultsPage(WebDriver driver) {
@@ -124,46 +127,92 @@ public class AttractionsResultsPage {
         }
     }
 
+
     /** Step 7: Capture details on the activity page */
-    public ActivityDetails captureDetails() {
+    public ActivityDetails captureDetailsFromPage() {
+
         ActivityDetails d = new ActivityDetails();
 
-        // Name
+        // TITLE
         try {
-            d.name = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("(//h1)[1]"))).getText().trim();
-        } catch (Exception ignore) { d.name = "(name not found)"; }
+            d.name = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("h3[data-testid='card-title'] a")
+            )).getText();
+        } catch (Exception e) {
+            d.name = "(title not found)";
+        }
 
-        // Rating
+        // DURATION
         try {
-            d.rating = driver.findElement(By.xpath(
-                    "//*[contains(@aria-label,'rating') or contains(@aria-label,'Rated') or contains(@data-testid,'rating') or contains(normalize-space(.),'Exceptional') or contains(normalize-space(.),'Wonderful')][1]"
-            )).getText().trim();
-        } catch (Exception ignore) { d.rating = "(rating not found)"; }
+            d.duration = driver.findElement(
+                    By.xpath(".//div[contains(text(),'Duration')]")
+            ).getText().replace("Duration:","").trim();
+        } catch (Exception e) {
+            d.duration = "(duration not found)";
+        }
 
-        // Duration
+        // PRICE
         try {
-            d.duration = driver.findElement(By.xpath(
-                    "(//*[contains(translate(.,'DURATIONHMIN','durationhmin'),'duration') or contains(.,'hour') or contains(.,'min')])[1]"
-            )).getText().trim();
-        } catch (Exception ignore) { d.duration = "(duration not found)"; }
+            d.price = driver.findElement(
+                    By.xpath(".//div[@data-testid='price']//div[contains(text(),'Rs')]")
+            ).getText().trim();
+        } catch (Exception e) {
+            d.price = "(price not found)";
+        }
 
-        // Description
+        // DEPARTURE POINT
         try {
-            d.description = driver.findElement(By.xpath(
-                    "(//section//*[self::p or self::div][string-length(normalize-space())>0])[1]"
-            )).getText().trim();
-        } catch (Exception ignore) { d.description = "(description not found)"; }
+
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // scroll page gradually to trigger lazy load
+            js.executeScript("window.scrollBy(0,800)");
+            Thread.sleep(500);
+
+            js.executeScript("window.scrollBy(0,800)");
+            Thread.sleep(500);
+
+            js.executeScript("window.scrollBy(0,800)");
+            Thread.sleep(500);
+
+            // now wait for Departure point heading
+            WebElement departureHeader = wait.until(ExpectedConditions.presenceOfElementLocated(
+                    By.xpath("//h3[normalize-space()='Departure point']")
+            ));
+
+            js.executeScript("arguments[0].scrollIntoView({block:'center'});", departureHeader);
+
+            // capture the value
+            WebElement departureText = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.xpath("//h3[normalize-space()='Departure point']/following-sibling::div[1]")
+            ));
+
+            d.departurePoint = departureText.getText().trim();
+
+        } catch (Exception e) {
+            d.departurePoint = "(departure point not found)";
+        }
 
         return d;
     }
+
+    public void waitForDetailsPage() {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//h3[normalize-space()='Location']")
+        ));
+    }
+
+
+
 
     /** Step 8: Print details to console */
     public void printDetails(ActivityDetails d) {
         System.out.println("\n==== SELECTED ACTIVITY DETAILS ====");
         System.out.println("Name      : " + d.name);
-        System.out.println("Rating    : " + d.rating);
+        System.out.println("Price    : " + d.price);
         System.out.println("Duration  : " + d.duration);
-        System.out.println("Description:\n" + d.description);
+        System.out.println("Departure : " + d.departurePoint);
         System.out.println("===================================\n");
+        ExcelUtils.appendActivityDetails(d.name, d.price, d.duration, d.departurePoint, excelPath);
     }
 }

@@ -4,12 +4,15 @@ package stepdefinitions;
 import io.cucumber.java.en.*;
 import org.openqa.selenium.WebDriver;
 import pages.AttractionsResultsPage;
+import utils.DriverFactory;
 
 public class AttractionsFlowSteps  {
 
-    private final WebDriver driver = BookingSteps.driver;
+    private final WebDriver driver = utils.DriverFactory.getDriver();
     private AttractionsResultsPage results;
     private AttractionsResultsPage.ActivityDetails selected;
+
+
 
     @Given("user is on attractions search results for {string}")
     public void user_is_on_attractions_search_results_for(String city) {
@@ -36,15 +39,19 @@ public class AttractionsFlowSteps  {
     @Then("user sees the attraction details page")
     public void user_sees_the_attraction_details_page() {
         // Lightweight guard happens inside captureDetails(); separate assert optional
+        results.waitForDetailsPage();
     }
 
     @And("user stores activity details")
     public void user_stores_activity_details() {
-        selected = results.captureDetails(); // name, rating, duration, description
+
+        // capture from card (SRP)
+        selected = results.captureDetailsFromPage();
     }
 
     @And("user displays the stored activity details")
     public void user_displays_the_stored_activity_details() {
         results.printDetails(selected);
+        DriverFactory.quitDriver();
     }
 }

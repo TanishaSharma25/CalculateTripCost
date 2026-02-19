@@ -4,6 +4,8 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import utils.DriverFactory;
+import utils.ExcelUtils;
+import java.util.ArrayList;
 
 import java.time.Duration;
 import java.util.List;
@@ -12,6 +14,7 @@ public class BookingResultsPage {
 
     WebDriver driver;
     WebDriverWait wait;
+    private final String excelPath = "booking_results.xlsx";
 
     public BookingResultsPage(WebDriver driver) {
         this.driver = driver;
@@ -165,6 +168,7 @@ public class BookingResultsPage {
         );
 
         System.out.println("\n==== TOP 3 HOTELS ====\n");
+        List<ExcelUtils.HotelRow> rows = new ArrayList<>();
 
         for (int i = 0; i < 3 && i < cards.size(); i++) {
 
@@ -185,7 +189,14 @@ public class BookingResultsPage {
             System.out.println((i + 1) + ". " + title);
             System.out.println("   " + price);
             System.out.println();
+            rows.add(new ExcelUtils.HotelRow(title, price));
         }
+
+
+        if (!rows.isEmpty()) {
+            ExcelUtils.appendTopHotels(rows, excelPath);
+        }
+
     }
 
     public void clickHeaderAttractions() {

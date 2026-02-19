@@ -44,6 +44,5 @@ public class BookingSteps {
     @Then("user clicks search")
     public void click_search() {
         page.clickSearch();
-
     }
 }

@@ -4,7 +4,35 @@
   <artifactId>automation</artifactId>
   <version>1.0</version>
 
+
+    <plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+            <filesets>
+                <fileset>
+                    <directory>reports</directory>
+                    <includes>
+                        <include>**</include>
+                    </includes>
+                </fileset>
+            </filesets>
+        </configuration>
+    </plugin>
+
   <dependencies>
+
+      <dependency>
+          <groupId>com.aventstack</groupId>
+          <artifactId>extentreports</artifactId>
+          <version>5.1.1</version>
+      </dependency>
+      <dependency>
+          <groupId>tech.grasshopper</groupId>
+          <artifactId>extentreports-cucumber7-adapter</artifactId>
+          <version>1.14.0</version>
+      </dependency>
+
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
       <artifactId>selenium-java</artifactId>
@@ -17,11 +45,17 @@
           <version>2.0.13</version>
       </dependency>
 
-    <dependency>
-      <groupId>io.github.bonigarcia</groupId>
-      <artifactId>webdrivermanager</artifactId>
-      <version>5.8.0</version>
-    </dependency>
+      <dependency>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>log4j-core</artifactId>
+          <version>2.21.1</version>
+      </dependency>
+
+      <dependency>
+          <groupId>io.github.bonigarcia</groupId>
+          <artifactId>webdrivermanager</artifactId>
+          <version>5.8.0</version>
+      </dependency>
 
     <dependency>
       <groupId>io.cucumber</groupId>

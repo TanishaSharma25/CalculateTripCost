@@ -16,15 +16,9 @@ Feature: Booking search
     And user selects wonderful review score
     Then user captures top three hotel names and prices
 
-  Scenario: Navigate to home and open attractions
-    Given user is on search results page
-    When user filters by property type hotels
-    And user selects parking and free wifi facilities
-    And user selects wonderful review score
-    And user navigates home and opens attractions
 
   Scenario: Search attractions in Rome for a specific date
-    Given user is on attractions home
+    Given user navigates home and opens attractions
     When user enters attractions destination as "rome"
     And user selects attractions date "2026-03-15"
     Then user clicks attractions search

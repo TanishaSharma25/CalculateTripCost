@@ -35,13 +35,6 @@ public class BookingResultsSteps {
     @Then("user captures top three hotel names and prices")
     public void capture_top_three() {
         resultsPage.printTopThreeHotels();
-        /* DriverFactory.quitDriver(); */
-    }
-
-    @And("user navigates home and opens attractions")
-    public void open_attractions_from_home() {
-        WebDriver driver = DriverFactory.getDriver();
-        driver.navigate().to("https://www.booking.com/");
-        resultsPage.clickHeaderAttractions();
+        DriverFactory.quitDriver();
     }
 }
