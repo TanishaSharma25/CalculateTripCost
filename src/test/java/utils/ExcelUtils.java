@@ -11,80 +11,132 @@ import java.util.List;
 
 public class ExcelUtils {
 
-    private static final String DEFAULT_FILE = "src/test/resources/booking_results.xlsx";
+    // Default output at project root (adjust if needed)
+    private static final String DEFAULT_FILE = "src/test/resources/booking_results.xlsx";;
     private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /** Public convenience methods **/
     public static void appendTopHotels(List<HotelRow> hotels) {
         appendTopHotels(hotels, DEFAULT_FILE);
     }
 
     public static void appendTopHotels(List<HotelRow> hotels, String filePath) {
-        String[] headers = { "S.No", "Hotel Name", "Price", "Timestamp" };
-        saveToExcel(filePath, "TopHotels", headers, hotels);
+        String[] headers = new String[] { "S.No", "Hotel Name", "Price", "Timestamp" };
+        appendRows(filePath, "TopHotels", headers, hotels);
     }
 
-    public static void appendActivityDetails(String name, String price, String duration, String departure) {
-        appendActivityDetails(name, price, duration, departure, DEFAULT_FILE);
-    }
 
-    public static void appendActivityDetails(String name, String price, String duration, String departure, String filePath) {
-        String[] headers = { "S.No", "Name", "Price", "Duration", "Departure", "Timestamp" };
-        ActivityRow row = new ActivityRow(name, price, duration, departure);
-        saveToExcel(filePath, "AttractionDetails", headers, Collections.singletonList(row));
-    }
-
-    private static synchronized void saveToExcel(String filePath, String sheetName, String[] headers, List<? extends RowConvertible> rows) {
-        Workbook workbook;
+    public static void resetFile(String filePath) {
         File file = new File(filePath);
+        // Option A: delete file if it exists (simplest)
+        if (file.exists()) {
+            if (!file.delete()) {
+                throw new RuntimeException("Failed to delete existing Excel file: " + filePath);
+            }
+        }
+    }
 
-        // Load existing workbook to preserve other sheets, or create new if file doesn't exist
+
+    public static void appendActivityDetails(String name, String price, String duration) {
+        appendActivityDetails(name, price, duration, DEFAULT_FILE);
+    }
+
+    public static void appendActivityDetails(String name, String price, String duration, String filePath) {
+        String[] headers = new String[] { "S.No", "Name", "Price", "Duration", "Timestamp" };
+        ActivityRow row = new ActivityRow(name, price, duration);
+        appendRows(filePath, "AttractionDetails", headers, Collections.<RowConvertible>singletonList(row));
+    }
+
+    /** Internal append logic (thread-safe) **/
+    private static synchronized void appendRows(String filePath, String sheetName, String[] headers, List<? extends RowConvertible> rows) {
+        if (rows == null || rows.isEmpty()) return;
+
+        Workbook workbook = null;
+        FileInputStream fis = null;
         try {
-            if (file.exists() && file.length() > 0) {
-                try (FileInputStream fis = new FileInputStream(file)) {
-                    workbook = new XSSFWorkbook(fis);
-                }
+            File file = new File(filePath);
+            if (file.exists()) {
+                fis = new FileInputStream(file);
+                workbook = new XSSFWorkbook(fis);
             } else {
                 workbook = new XSSFWorkbook();
             }
 
-            // Overwrite logic: Remove existing sheet and recreate it fresh
-            int sheetIndex = workbook.getSheetIndex(sheetName);
-            if (sheetIndex != -1) workbook.removeSheetAt(sheetIndex);
-            Sheet sheet = workbook.createSheet(sheetName);
+            Sheet sheet = getOrCreateSheet(workbook, sheetName);
+            ensureHeaderIfEmpty(sheet, headers);
 
-            // Create Header
-            Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < headers.length; i++) {
-                headerRow.createCell(i).setCellValue(headers[i]);
-            }
+            // If header at row 0 exists, data starts at row 1
+            int startRow = sheet.getPhysicalNumberOfRows();
+            if (startRow == 0) startRow = 1; // ensure data starts after header
 
-            // Write Data
-            int rowNum = 1;
+            // Serial number (S.No) = current row index, starting at 1 for first data row
+            int serial = startRow;
+
             for (RowConvertible r : rows) {
-                Row excelRow = sheet.createRow(rowNum);
+                org.apache.poi.ss.usermodel.Row excelRow = sheet.createRow(startRow++);
                 int col = 0;
-                excelRow.createCell(col++).setCellValue(rowNum++); // S.No
+                excelRow.createCell(col++).setCellValue(serial++); // S.No
                 String[] cols = r.toColumns();
-                for (String val : cols) {
-                    excelRow.createCell(col++).setCellValue(val);
+                for (int i = 0; i < cols.length; i++) {
+                    excelRow.createCell(col++).setCellValue(cols[i]);
                 }
-                excelRow.createCell(col).setCellValue(LocalDateTime.now().format(TS_FMT));
+                excelRow.createCell(col).setCellValue(LocalDateTime.now().format(TS_FMT)); // Timestamp
             }
 
-            for (int i = 0; i < headers.length; i++) sheet.autoSizeColumn(i);
+            // Auto-size columns for readability
+            for (int c = 0; c < headers.length; c++) {
+                sheet.autoSizeColumn(c);
+            }
 
-            // Save and Close
-            try (FileOutputStream fos = new FileOutputStream(filePath)) {
+            // Write out
+            closeQuietly(fis);
+            FileOutputStream fos = null;
+            try {
+                fos = new FileOutputStream(filePath, false); // overwrite file with updated workbook
                 workbook.write(fos);
+            } finally {
+                closeQuietly(fos);
             }
-            workbook.close();
 
         } catch (IOException e) {
-            throw new RuntimeException("Error writing to Excel: " + filePath, e);
+            throw new RuntimeException("Failed to write Excel: " + filePath, e);
+        } finally {
+            closeQuietly(fis);
+            closeQuietly(workbook);
         }
     }
 
-    /** DTOs and Interface (Kept exactly as original) **/
+    private static Sheet getOrCreateSheet(Workbook workbook, String sheetName) {
+        Sheet sheet = workbook.getSheet(sheetName);
+        if (sheet == null) {
+            sheet = workbook.createSheet(sheetName);
+        }
+        return sheet;
+    }
+
+    private static void ensureHeaderIfEmpty(Sheet sheet, String[] headers) {
+        if (sheet.getPhysicalNumberOfRows() == 0) {
+            org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+            }
+        }
+    }
+
+    private static void closeQuietly(Closeable c) {
+        if (c != null) {
+            try { c.close(); } catch (IOException ignored) {}
+        }
+    }
+
+    private static void closeQuietly(Workbook wb) {
+        if (wb != null) {
+            try { wb.close(); } catch (IOException ignored) {}
+        }
+    }
+
+    /** DTOs + interface to convert to string columns **/
     public interface RowConvertible {
         String[] toColumns();
     }
@@ -92,15 +144,28 @@ public class ExcelUtils {
     public static class HotelRow implements RowConvertible {
         public final String name;
         public final String price;
-        public HotelRow(String name, String price) { this.name = name; this.price = price; }
-        @Override public String[] toColumns() { return new String[] { name, price }; }
+
+        public HotelRow(String name, String price) {
+            this.name = name;
+            this.price = price;
+        }
+
+        @Override
+        public String[] toColumns() {
+            return new String[] { name, price };
+        }
     }
 
     public static class ActivityRow implements RowConvertible {
-        public final String name, price, duration, departure;
-        public ActivityRow(String name, String price, String duration, String departure) {
-            this.name = name; this.price = price; this.duration = duration; this.departure = departure;
+        public final String name, price, duration;
+        public ActivityRow(String name, String price, String duration) {
+            this.name = name;
+            this.price = price;
+            this.duration = duration;
         }
-        @Override public String[] toColumns() { return new String[] { name, price, duration, departure }; }
+        @Override
+        public String[] toColumns() {
+            return new String[] { name, price, duration };
+        }
     }
 }

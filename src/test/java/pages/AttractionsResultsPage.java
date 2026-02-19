@@ -12,11 +12,10 @@ public class AttractionsResultsPage {
     private final WebDriver driver;
     private final WebDriverWait wait;
 
-    private final String excelPath = "booking_results.xlsx";
+    private final String excelPath = "src/test/resources/booking_results.xlsx";
 
     public static class ActivityDetails {
         public String name;
-        public String departurePoint;
         public String duration;
         public String price;
     }
@@ -160,38 +159,6 @@ public class AttractionsResultsPage {
             d.price = "(price not found)";
         }
 
-        // DEPARTURE POINT
-        try {
-
-            JavascriptExecutor js = (JavascriptExecutor) driver;
-
-            // scroll page gradually to trigger lazy load
-            js.executeScript("window.scrollBy(0,800)");
-            Thread.sleep(500);
-
-            js.executeScript("window.scrollBy(0,800)");
-            Thread.sleep(500);
-
-            js.executeScript("window.scrollBy(0,800)");
-            Thread.sleep(500);
-
-            // now wait for Departure point heading
-            WebElement departureHeader = wait.until(ExpectedConditions.presenceOfElementLocated(
-                    By.xpath("//h3[normalize-space()='Departure point']")
-            ));
-
-            js.executeScript("arguments[0].scrollIntoView({block:'center'});", departureHeader);
-
-            // capture the value
-            WebElement departureText = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.xpath("//h3[normalize-space()='Departure point']/following-sibling::div[1]")
-            ));
-
-            d.departurePoint = departureText.getText().trim();
-
-        } catch (Exception e) {
-            d.departurePoint = "(departure point not found)";
-        }
 
         return d;
     }
@@ -211,8 +178,7 @@ public class AttractionsResultsPage {
         System.out.println("Name      : " + d.name);
         System.out.println("Price    : " + d.price);
         System.out.println("Duration  : " + d.duration);
-        System.out.println("Departure : " + d.departurePoint);
         System.out.println("===================================\n");
-        ExcelUtils.appendActivityDetails(d.name, d.price, d.duration, d.departurePoint, excelPath);
+        ExcelUtils.appendActivityDetails(d.name, d.price, d.duration, excelPath);
     }
 }

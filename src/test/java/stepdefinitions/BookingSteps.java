@@ -4,6 +4,7 @@ import io.cucumber.java.en.*;
 import org.openqa.selenium.WebDriver;
 import pages.BookingHomePage;
 import utils.DriverFactory;
+import utils.ExcelUtils;
 
 public class BookingSteps {
 
@@ -12,6 +13,7 @@ public class BookingSteps {
 
     @Given("user launches browser")
     public void launch_browser() {
+        ExcelUtils.resetFile("src/test/resources/booking_results.xlsx");
         driver = DriverFactory.initDriver();
         page = new BookingHomePage(driver);
     }

@@ -14,7 +14,7 @@ public class BookingResultsPage {
 
     WebDriver driver;
     WebDriverWait wait;
-    private final String excelPath = "booking_results.xlsx";
+    private final String excelPath = "src/test/resources/booking_results.xlsx";
 
     public BookingResultsPage(WebDriver driver) {
         this.driver = driver;

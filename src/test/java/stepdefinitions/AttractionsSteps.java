@@ -4,6 +4,7 @@ import io.cucumber.java.en.*;
 import org.openqa.selenium.WebDriver;
 import utils.DriverFactory;
 import pages.AttractionsPage;
+import utils.ExcelUtils;
 
 public class AttractionsSteps {
 
